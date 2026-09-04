@@ -1,0 +1,12 @@
+# dgx-spark-llm-serving
+
+> Field notes and an operational guard for local vLLM serving on NVIDIA DGX Spark, covering model selection, serving flags, generation wedges, multi-node links, and unattended recovery.
+
+## Project documentation
+
+- [README.md](README.md): Records measured serving behavior, deployment flags, failure modes, fleet networking, and reliability practices.
+- [LICENSE](LICENSE): Contains the MIT license terms.
+
+## Operations
+
+- [scripts/engine-guard.sh](scripts/engine-guard.sh): Probes real text generation and restarts a wedged vLLM container after repeated failures.

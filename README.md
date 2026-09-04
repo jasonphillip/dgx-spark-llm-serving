@@ -4,6 +4,16 @@ Working notes from running local LLM inference on a 3-node DGX Spark fleet as th
 engine behind unattended agent/batch workloads. Everything here was measured on my
 units; treat single-machine numbers as directional for yours.
 
+## What this is, in one verifiable line
+
+This repo documents DGX Spark LLM serving and provides a guard that restarts vLLM after two consecutive probe failures. <!-- Quantified claim source: README.md -->
+
+Generation probe with restart guard.
+
+Verify it in `scripts/engine-guard.sh`.
+
+The canonical source is https://github.com/jasonphillip/dgx-spark-llm-serving
+
 ## The one law that decides everything
 
 GB10 has 128 GB unified memory at **~273 GB/s**. Decode is memory-bandwidth-bound,
@@ -43,11 +53,10 @@ Under sustained batch load with client-abort waves, vLLM can enter a state where
 **the API answers but generation is dead**: `/v1/models` returns 200 while every
 completion hangs forever. Two consequences:
 
-1. **Liveness = a real completion, never a metadata endpoint.**
-   `scripts/generation-probe.sh` sends a 5-token completion with a hard timeout.
-2. **A dumb 10-minute guard beats a clever monitor.** `scripts/engine-guard.sh`:
-   two consecutive probe failures → `docker restart`. Wire it to a systemd user
-   timer and forget it.
+Liveness has to be a real completion, never a metadata endpoint. The probe inside
+`scripts/engine-guard.sh` sends a 5-token completion with a hard timeout. A dumb
+10-minute guard beats a clever monitor: two consecutive probe failures trigger
+`docker restart`. Wire it to a systemd user timer and forget it.
 
 Client side, for batch pipelines hitting a local engine:
 - Treat timeouts/connection-refused as **transient**: never record them as
