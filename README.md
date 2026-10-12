@@ -1,8 +1,9 @@
-# LLM serving on NVIDIA DGX Spark (GB10) — field notes
+# LLM serving on NVIDIA DGX Spark (GB10) — field notes, August–September 2026
 
 Working notes from running local LLM inference on a 3-node DGX Spark fleet as the
-engine behind unattended agent/batch workloads. Everything here was measured on my
-units; treat single-machine numbers as directional for yours.
+engine behind unattended agent/batch workloads. The fleet, link and reliability
+numbers are from my units. The decode table cites public GB10 benchmarks where
+marked. Treat single-machine numbers as directional for yours.
 
 ## What this is, in one verifiable line
 
@@ -14,6 +15,8 @@ Verify it in `scripts/engine-guard.sh`.
 
 The canonical source is https://github.com/jasonphillip/dgx-spark-llm-serving
 
+Extracted from a private working tree on 2026-08-26.
+
 ## The one law that decides everything
 
 GB10 has 128 GB unified memory at **~273 GB/s**. Decode is memory-bandwidth-bound,
@@ -21,9 +24,9 @@ so decode speed ≈ bandwidth / bytes-touched-per-token:
 
 | Model class | Decode (single stream) | Verdict |
 |---|---|---|
-| Dense ~32B (FP8/INT4) | ~10 tok/s | unusable for agentic loops |
-| MoE, small active params (e.g. Qwen3-30B-A3B, 3B active, FP8) | ~44–89 tok/s | the workable class |
-| Same MoE under concurrency (12–16 streams) | ~290–370 tok/s aggregate | batch workhorse |
+| Dense ~32B (FP8/INT4) | ~10 tok/s (public GB10 benchmarks) | unusable for agentic loops |
+| MoE, small active params (e.g. Qwen3-30B-A3B, 3B active) | ~44–89 tok/s (public GB10 benchmarks) | the workable class |
+| Same MoE under concurrency (12–16 streams) | ~290–370 tok/s aggregate (public GB10 benchmarks) | batch workhorse |
 
 Prefill is compute-bound and fast. Rule of thumb: **on GB10, pick MoE models with
 small active parameter counts.** Total parameters are nearly free (unified memory);
@@ -56,13 +59,14 @@ completion hangs forever. Two consequences:
 Liveness has to be a real completion, never a metadata endpoint. The probe inside
 `scripts/engine-guard.sh` sends a 5-token completion with a hard timeout. A dumb
 10-minute guard beats a clever monitor: two consecutive probe failures trigger
-`docker restart`. Wire it to a systemd user timer and forget it.
+`docker restart`. A failed restart is logged and retried on the next run. Wire
+it to a systemd user timer and forget it.
 
 Client side, for batch pipelines hitting a local engine:
 - Treat timeouts/connection-refused as **transient**: never record them as
   document-level failures; re-queue at the next pass.
 - Add a **consecutive-transient circuit breaker** (mine trips at 30) so a dead
-  engine can't burn a 20k-item queue as spurious failures.
+  engine can't burn a 29k-document queue as spurious failures.
 - Pre-flight each pass with the generation probe, not `/v1/models`.
 
 ## Multi-node (ConnectX-7 ring)
@@ -70,14 +74,14 @@ Client side, for batch pipelines hitting a local engine:
 Three Sparks in a ring over CX7: each edge is one cable carrying two planes
 (~100 Gb/s each). Findings:
 
-- **87 Gb/s sustained** on an untuned, link-local QSFP link — near line rate for
-  one plane with almost no tuning beyond MTU 9000.
-- Plain `scp`/`rsync` uses one plane (~100 Gb/s ceiling); only NCCL spans both
-  planes (~200 Gb/s per edge).
+- **87 Gb/s** on an untuned link-local QSFP link at MTU 1500, and **105 Gb/s** after
+  tuning (MTU 9000): line rate for one plane.
+- Plain `scp`/`rsync` uses one plane (~100 Gb/s ceiling). Only NCCL spans both
+  planes: measured ~165 Gb/s all-reduce bus bandwidth against a ~200 Gb/s two-plane ceiling.
 - `NCCL_NET_PLUGIN=none` was required for clean 20+ GB/s NCCL inter-node
   bandwidth on this stack (the bundled plugin underperformed).
-- Doubling cables between two nodes **reduced** bandwidth in my tests — the
-  topology assumptions matter more than raw links.
+- Doubling cables between two nodes **reduces** bandwidth. The topology assumptions
+  matter more than raw links.
 - Pipeline parallelism across the ring runs very large MoE models that no single
   node fits (e.g. a ~397B-total MoE at PP=3), at batch-usable speeds.
 

@@ -28,6 +28,12 @@ echo "$FAILS" > "$STATE"
 echo "$(date '+%F %H:%M') probe fail #$FAILS" >> "$LOG"
 if [ "$FAILS" -ge 2 ]; then
   echo "$(date '+%F %H:%M') RESTARTING $CONTAINER (wedged)" >> "$LOG"
-  docker restart "$CONTAINER" >/dev/null 2>&1
-  echo 0 > "$STATE"
+  if docker restart "$CONTAINER" >/dev/null 2>&1; then
+    echo 0 > "$STATE"
+    echo "$(date '+%F %H:%M') RESTARTED $CONTAINER" >> "$LOG"
+  else
+    rc=$?
+    echo "$(date '+%F %H:%M') RESTART FAILED rc=$rc" >> "$LOG"
+    exit 1
+  fi
 fi
