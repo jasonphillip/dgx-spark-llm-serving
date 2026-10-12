@@ -1,0 +1,10 @@
+[Unit]
+Description=vLLM engine wedge guard
+
+[Service]
+Type=oneshot
+# Point ExecStart at scripts/engine-guard.sh in your checkout.
+ExecStart=/bin/bash %h/path/to/engine-guard.sh
+# Environment=ENGINE_URL=http://localhost:8010
+# Environment=ENGINE_MODEL=qwen3-30b-a3b
+# Environment=CONTAINER=llm

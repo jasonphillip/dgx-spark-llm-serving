@@ -12,10 +12,10 @@ STATE="${STATE:-$HOME/.cache/engine-guard.fails}"
 LOG="${LOG:-$HOME/.cache/engine-guard.log}"
 
 probe() {
-  curl -sf -m 90 "$ENGINE_URL/v1/chat/completions" \
+  body=$(curl -sf -m 90 "$ENGINE_URL/v1/chat/completions" \
     -H 'Content-Type: application/json' \
     -d "{\"model\":\"$ENGINE_MODEL\",\"messages\":[{\"role\":\"user\",\"content\":\"Say OK\"}],\"max_tokens\":5}" \
-    >/dev/null 2>&1
+    2>/dev/null) && printf '%s' "$body" | grep -q '"choices"'
 }
 
 if probe; then

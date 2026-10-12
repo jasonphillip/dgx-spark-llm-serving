@@ -22,11 +22,13 @@ Extracted from a private working tree on 2026-08-26.
 GB10 has 128 GB unified memory at **~273 GB/s**. Decode is memory-bandwidth-bound,
 so decode speed ≈ bandwidth / bytes-touched-per-token:
 
-| Model class | Decode (single stream) | Verdict |
+| Model class | Decode speed | Verdict |
 |---|---|---|
-| Dense ~32B (FP8/INT4) | ~10 tok/s (public GB10 benchmarks) | unusable for agentic loops |
-| MoE, small active params (e.g. Qwen3-30B-A3B, 3B active) | ~44–89 tok/s (public GB10 benchmarks) | the workable class |
-| Same MoE under concurrency (12–16 streams) | ~290–370 tok/s aggregate (public GB10 benchmarks) | batch workhorse |
+| Dense ~32B (Q4/FP8) | ~10 tok/s (public GB10 benchmarks: 10.7 on llama.cpp, 9.4–10.1 on Ollama) | unusable for agentic loops |
+| MoE, 3B active (Qwen3-30B-A3B) | up to ~89 tok/s in public llama.cpp benchmarks, ~46 tok/s in my vLLM FP8 logs | the workable class |
+| MoE, 3B active, 16 concurrent streams | ~350 tok/s aggregate, ~22 per stream (public vLLM benchmark, Qwen3-Coder-Next-80B-A3B int4) | batch workhorse |
+
+Public figures come from [DandinPower's llama.cpp report](https://github.com/DandinPower/llama.cpp_bench/blob/main/dgx_spark/report.md), the [G3nadh Ollama dataset](https://huggingface.co/datasets/G3nadh/dgx-spark-benchmarks) and [NathanMaine's vLLM notes](https://github.com/NathanMaine/NVIDIA-DGX-Spark-with-vLLM), all measured on GB10. An aggregate is a capacity figure, not a per-request speed.
 
 Prefill is compute-bound and fast. Rule of thumb: **on GB10, pick MoE models with
 small active parameter counts.** Total parameters are nearly free (unified memory);
@@ -37,7 +39,7 @@ active parameters are what you pay per token.
 ```bash
 docker run -d --name llm --gpus all --network host --ipc host \
   -v ~/.cache/huggingface:/root/.cache/huggingface \
-  --entrypoint vllm <sm_121-capable vllm image> \
+  --entrypoint vllm nvcr.io/nvidia/vllm:26.08-py3 \
   serve Qwen/Qwen3-30B-A3B-Instruct-2507-FP8 \
   --served-model-name qwen3-30b-a3b --port 8010 \
   --max-model-len 32768 --max-num-seqs 16 \
@@ -45,6 +47,8 @@ docker run -d --name llm --gpus all --network host --ipc host \
   --attention-backend TRITON_ATTN \
   --no-enable-log-requests
 ```
+
+Image: `nvcr.io/nvidia/vllm:26.08-py3` (NGC), the build these notes were taken on.
 
 - `--gpu-memory-utilization` well below 1.0 lets the engine co-tenant with other
   services on the same box (unified memory makes this practical).
@@ -59,8 +63,14 @@ completion hangs forever. Two consequences:
 Liveness has to be a real completion, never a metadata endpoint. The probe inside
 `scripts/engine-guard.sh` sends a 5-token completion with a hard timeout. A dumb
 10-minute guard beats a clever monitor: two consecutive probe failures trigger
-`docker restart`. A failed restart is logged and retried on the next run. Wire
-it to a systemd user timer and forget it.
+`docker restart`. A failed restart is logged and retried on the next run.
+
+Copy `systemd/engine-guard.service` and `systemd/engine-guard.timer` to
+`~/.config/systemd/user/`, then edit `ExecStart` to point at your checkout:
+
+```bash
+systemctl --user daemon-reload && systemctl --user enable --now engine-guard.timer
+```
 
 Client side, for batch pipelines hitting a local engine:
 - Treat timeouts/connection-refused as **transient**: never record them as

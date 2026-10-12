@@ -1,0 +1,9 @@
+[Unit]
+Description=Engine guard every 10 min
+
+[Timer]
+OnBootSec=5min
+OnUnitInactiveSec=10min
+
+[Install]
+WantedBy=timers.target
