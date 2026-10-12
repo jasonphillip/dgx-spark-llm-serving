@@ -1,6 +1,6 @@
 # Warm Qwen3 FP8 throughput, 2026-10-12
 
-The preserved result is [bench/results/20261012T201254Z.json](../bench/results/20261012T201254Z.json). It was produced by the previous version of `bench/measure.py` on one DGX Spark unit. Every timed request reports `token_count_source: usage` and 256 server-reported completion tokens. The script sent one untimed warmup before the timed requests.
+The preserved result is [bench/results/20261012T201254Z.json](../bench/results/20261012T201254Z.json). It was produced by the previous version of `bench/measure.py` on one DGX Spark unit. The hostname in its `uname` field was replaced before publication. Every timed request reports `token_count_source: usage` and 256 server-reported completion tokens. The script sent one untimed warmup before the timed requests.
 
 ## Conditions
 
