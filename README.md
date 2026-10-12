@@ -72,6 +72,17 @@ Copy `systemd/engine-guard.service` and `systemd/engine-guard.timer` to
 systemctl --user daemon-reload && systemctl --user enable --now engine-guard.timer
 ```
 
+### Requirements and troubleshooting
+
+- `python3` and `curl` must be on PATH.
+- The user must be allowed to run `docker restart` (usually via the docker group).
+- User timers run only while a user session exists unless `loginctl enable-linger <user>` is set.
+  Check the host first; never enable linger from a script.
+- Inspect timers with `systemctl --user list-timers`.
+- Inspect failures with `journalctl --user -u engine-guard.service`.
+- State: `$HOME/.cache/engine-guard.fails` (`STATE` overrides).
+- Log: `$HOME/.cache/engine-guard.log` (`LOG` overrides).
+
 Client side, for batch pipelines hitting a local engine:
 - Treat timeouts/connection-refused as **transient**: never record them as
   document-level failures; re-queue at the next pass.

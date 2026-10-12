@@ -11,11 +11,28 @@ CONTAINER="${CONTAINER:-llm}"
 STATE="${STATE:-$HOME/.cache/engine-guard.fails}"
 LOG="${LOG:-$HOME/.cache/engine-guard.log}"
 
+for path in "$STATE" "$LOG"; do
+  dir=$(dirname -- "$path")
+  if ! mkdir -p -- "$dir" 2>/dev/null || ! : >> "$path" 2>/dev/null; then
+    echo "engine-guard: cannot write $path" >&2
+    exit 2
+  fi
+done
+
 probe() {
   body=$(curl -sf -m 90 "$ENGINE_URL/v1/chat/completions" \
     -H 'Content-Type: application/json' \
     -d "{\"model\":\"$ENGINE_MODEL\",\"messages\":[{\"role\":\"user\",\"content\":\"Say OK\"}],\"max_tokens\":5}" \
-    2>/dev/null) && printf '%s' "$body" | grep -q '"choices"'
+    2>/dev/null) || return 1
+  printf '%s' "$body" | python3 -c '
+import json, sys
+try:
+    data = json.load(sys.stdin)
+    choices = data.get("choices") if isinstance(data, dict) else None
+    ok = isinstance(choices, list) and bool(choices) and isinstance(choices[0], dict) and ("message" in choices[0] or "text" in choices[0])
+except (ValueError, TypeError):
+    ok = False
+sys.exit(0 if ok else 1)'
 }
 
 if probe; then
