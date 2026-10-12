@@ -16,9 +16,10 @@ guard restarted the container after two consecutive failed probes. A healthy
 probe between failures reset the count.
 
 The `engine-guard.log` lines show `05:32 probe fail #1`, `05:54 probe fail
-#1`, and `06:50 probe fail #1`. Each of those first failures was followed by
-a healthy probe, so none caused a restart. The next recorded line was `07:02
-probe fail #2`, followed by `07:02 RESTARTING llm (wedged)`, with the container
+#1`, and `06:50 probe fail #1`. Later healthy probes reset the 05:32 and
+05:54 failures. The 06:50 failure was the first strike of the pair that
+triggered the restart. The next recorded line was `07:02 probe fail #2`,
+followed by `07:02 RESTARTING llm (wedged)`, with the container
 name shown as `llm`, the README's example name.
 The two-strike policy used two failed probes, at 06:50 and 07:02. The log
 timestamps have minute precision, so they do not give

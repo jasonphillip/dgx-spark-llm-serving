@@ -4,9 +4,8 @@ This repo is for people running local LLM inference on DGX Spark GB10 as the
 engine behind unattended batch and agent workloads.
 
 The Qwen3 MoE vLLM server, generation guard, and ConnectX-7 ring worked on my
-three-Spark fleet. These are field notes from one fleet. Single-stream results
-are directional, and external benchmark rows are marked. There is no own
-measurement for 12 to 16 concurrent streams.
+three-Spark fleet. These are field notes from one fleet. Single-stream and
+16-stream results are directional, and external benchmark rows are marked.
 
 ## What this is, in one verifiable line
 
@@ -50,9 +49,13 @@ Check the host before changing lingering.
 
 ## Measured result and engineering choice
 
-Four single-stream Qwen3 FP8 requests produced 50.4 to 53.1 output tokens per
-second on a warm server. The [throughput record](evidence/throughput-2026-09-04.md)
-gives the request and limits. In one wedge, the guard restarted the container at
+Five single-stream Qwen3 FP8 requests reached 52.8 to 53.0 output tokens per
+second (p50 52.9) on a warm server on 2026-10-12. One round of 16 concurrent
+requests reached 441.6 tok/s aggregate (27.6 tok/s per request p50). The
+[2026-10-12 throughput record](evidence/throughput-2026-10-12.md) gives the
+conditions and limits. Four earlier single-stream requests reached 50.4 to
+53.1 tok/s; see the [2026-09-04 record](evidence/throughput-2026-09-04.md).
+In one wedge, the guard restarted the container at
 07:02 and a later probe was healthy at 07:12. The [case study](docs/case-study-wedge-2026-08-26.md)
 records the workload recovery separately.
 
@@ -76,8 +79,8 @@ so decode speed ≈ bandwidth / bytes-touched-per-token:
 | Model class | Decode speed | Verdict |
 |---|---|---|
 | Dense ~32B (Q4/FP8) | ~10 tok/s (public GB10 benchmarks: 10.7 on llama.cpp, 9.4–10.1 on Ollama) | unusable for agentic loops |
-| MoE, 3B active (Qwen3-30B-A3B) | up to ~89 tok/s in public llama.cpp benchmarks, 50–53 tok/s single stream in my vLLM FP8 runs (2026-09-04, [evidence/throughput-2026-09-04.md](evidence/throughput-2026-09-04.md)) | the workable class |
-| MoE, 3B active, 16 concurrent streams | ~350 tok/s aggregate, ~22 per stream (public vLLM benchmark, Qwen3-Coder-Next-80B-A3B int4) | batch workhorse |
+| MoE, 3B active (Qwen3-30B-A3B) | 52.9 tok/s single stream in my run on 2026-10-12 (five 256-token generations), 50 to 53 in my 2026-09-04 runs, up to ~89 in public llama.cpp benchmarks | the workable class |
+| MoE, 3B active, 16 concurrent streams | 441.6 tok/s aggregate at 16 concurrent streams in my run on 2026-10-12 (27.6 tok/s per stream), compared with ~350 at 16 users in a public vLLM benchmark of a different 80B-A3B model | batch workhorse |
 
 Public figures come from [DandinPower's llama.cpp report](https://github.com/DandinPower/llama.cpp_bench/blob/main/dgx_spark/report.md), the [G3nadh Ollama dataset](https://huggingface.co/datasets/G3nadh/dgx-spark-benchmarks) and [NathanMaine's vLLM notes](https://github.com/NathanMaine/NVIDIA-DGX-Spark-with-vLLM), all measured on GB10. An aggregate is a capacity figure, not a per-request speed.
 

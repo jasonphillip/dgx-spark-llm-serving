@@ -1,0 +1,332 @@
+{
+  "arguments": {
+    "url": "http://localhost:8010",
+    "model": "qwen3-30b-a3b",
+    "max_tokens": 256,
+    "single_runs": 5,
+    "concurrency": 16,
+    "concurrent_rounds": 1,
+    "prompt": "Write a 250-word plain description of how a ring network of three computers passes data.",
+    "image": "nvcr.io/nvidia/vllm:26.08-py3",
+    "out": "bench/results/20261012T201254Z.json"
+  },
+  "utc_start_time": "2026-10-12T20:12:54.403845+00:00",
+  "temperature": 0,
+  "model_id": "qwen3-30b-a3b",
+  "model_ids": [
+    "qwen3-30b-a3b"
+  ],
+  "server_version": {
+    "version": "0.27.1+93523f72.dev"
+  },
+  "container_image": "nvcr.io/nvidia/vllm:26.08-py3",
+  "platform": "Linux-7.0.0-1019-nvidia-aarch64-with-glibc2.39",
+  "uname": [
+    "Linux",
+    "dgx-spark",
+    "7.0.0-1019-nvidia",
+    "#19~24.04.2-Ubuntu SMP PREEMPT_DYNAMIC Sun Sep  6 18:35:11 UTC 2",
+    "aarch64",
+    "aarch64"
+  ],
+  "nvidia_smi_name": "NVIDIA GB10",
+  "single_requests": [
+    {
+      "kind": "single",
+      "index": 1,
+      "completion_tokens": 256,
+      "token_count_source": "usage",
+      "content_chunks": 256,
+      "wall_seconds": 4.838167420006357,
+      "tokens_per_second": 52.91259639784512,
+      "ttft_seconds": 0.09846244903746992,
+      "mean_inter_token_latency_seconds": 0.01858697792551681,
+      "status": "ok"
+    },
+    {
+      "kind": "single",
+      "index": 2,
+      "completion_tokens": 256,
+      "token_count_source": "usage",
+      "content_chunks": 256,
+      "wall_seconds": 4.830132441944443,
+      "tokens_per_second": 53.00061707975513,
+      "ttft_seconds": 0.09391151298768818,
+      "mean_inter_token_latency_seconds": 0.018573264568569323,
+      "status": "ok"
+    },
+    {
+      "kind": "single",
+      "index": 3,
+      "completion_tokens": 256,
+      "token_count_source": "usage",
+      "content_chunks": 256,
+      "wall_seconds": 4.839983657002449,
+      "tokens_per_second": 52.8927405838698,
+      "ttft_seconds": 0.09609451494179666,
+      "mean_inter_token_latency_seconds": 0.01860337934922427,
+      "status": "ok"
+    },
+    {
+      "kind": "single",
+      "index": 4,
+      "completion_tokens": 256,
+      "token_count_source": "usage",
+      "content_chunks": 256,
+      "wall_seconds": 4.850645613973029,
+      "tokens_per_second": 52.776479745820374,
+      "ttft_seconds": 0.09874678798951209,
+      "mean_inter_token_latency_seconds": 0.018634828651214345,
+      "status": "ok"
+    },
+    {
+      "kind": "single",
+      "index": 5,
+      "completion_tokens": 256,
+      "token_count_source": "usage",
+      "content_chunks": 256,
+      "wall_seconds": 4.842400685069151,
+      "tokens_per_second": 52.86633978665568,
+      "ttft_seconds": 0.09897864703088999,
+      "mean_inter_token_latency_seconds": 0.01860158590179886,
+      "status": "ok"
+    }
+  ],
+  "single_tokens_per_second": {
+    "p50": 52.8927405838698,
+    "p95": 52.983012943373126
+  },
+  "single_ttft_seconds": {
+    "p50": 0.09846244903746992,
+    "p95": 0.09893227522261441
+  },
+  "single_mean_inter_token_latency_seconds": {
+    "p50": 0.01860158590179886,
+    "p95": 0.01862853879081633
+  },
+  "concurrent_rounds": [
+    {
+      "round": 1,
+      "wall_seconds": 9.275636514998041,
+      "aggregate_tokens_per_second": 441.5869459068454,
+      "requests": [
+        {
+          "kind": "concurrent",
+          "index": 1,
+          "round": 1,
+          "completion_tokens": 256,
+          "token_count_source": "usage",
+          "content_chunks": 256,
+          "wall_seconds": 9.272280249977484,
+          "tokens_per_second": 27.609174129591437,
+          "ttft_seconds": 0.7153986899647862,
+          "mean_inter_token_latency_seconds": 0.03355634312154543,
+          "status": "ok"
+        },
+        {
+          "kind": "concurrent",
+          "index": 2,
+          "round": 1,
+          "completion_tokens": 256,
+          "token_count_source": "usage",
+          "content_chunks": 256,
+          "wall_seconds": 9.27292481798213,
+          "tokens_per_second": 27.607254995054284,
+          "ttft_seconds": 0.7175792610505596,
+          "mean_inter_token_latency_seconds": 0.03355028607435159,
+          "status": "ok"
+        },
+        {
+          "kind": "concurrent",
+          "index": 3,
+          "round": 1,
+          "completion_tokens": 256,
+          "token_count_source": "usage",
+          "content_chunks": 256,
+          "wall_seconds": 9.274838314042427,
+          "tokens_per_second": 27.601559329870703,
+          "ttft_seconds": 0.7161296280100942,
+          "mean_inter_token_latency_seconds": 0.03356346728636281,
+          "status": "ok"
+        },
+        {
+          "kind": "concurrent",
+          "index": 4,
+          "round": 1,
+          "completion_tokens": 256,
+          "token_count_source": "usage",
+          "content_chunks": 256,
+          "wall_seconds": 9.27292427397333,
+          "tokens_per_second": 27.607256614671698,
+          "ttft_seconds": 0.7158560079988092,
+          "mean_inter_token_latency_seconds": 0.03355704016444803,
+          "status": "ok"
+        },
+        {
+          "kind": "concurrent",
+          "index": 5,
+          "round": 1,
+          "completion_tokens": 256,
+          "token_count_source": "usage",
+          "content_chunks": 256,
+          "wall_seconds": 9.27338373591192,
+          "tokens_per_second": 27.60588877699728,
+          "ttft_seconds": 0.7158804559148848,
+          "mean_inter_token_latency_seconds": 0.03355874440806242,
+          "status": "ok"
+        },
+        {
+          "kind": "concurrent",
+          "index": 6,
+          "round": 1,
+          "completion_tokens": 256,
+          "token_count_source": "usage",
+          "content_chunks": 256,
+          "wall_seconds": 9.236778275924735,
+          "tokens_per_second": 27.715291236042006,
+          "ttft_seconds": 0.6612408219370991,
+          "mean_inter_token_latency_seconds": 0.03362943804731556,
+          "status": "ok"
+        },
+        {
+          "kind": "concurrent",
+          "index": 7,
+          "round": 1,
+          "completion_tokens": 256,
+          "token_count_source": "usage",
+          "content_chunks": 256,
+          "wall_seconds": 9.271413184003904,
+          "tokens_per_second": 27.611756149718392,
+          "ttft_seconds": 0.7171034149359912,
+          "mean_inter_token_latency_seconds": 0.03354620621585305,
+          "status": "ok"
+        },
+        {
+          "kind": "concurrent",
+          "index": 8,
+          "round": 1,
+          "completion_tokens": 256,
+          "token_count_source": "usage",
+          "content_chunks": 256,
+          "wall_seconds": 9.27149286493659,
+          "tokens_per_second": 27.611518849154702,
+          "ttft_seconds": 0.7155373159330338,
+          "mean_inter_token_latency_seconds": 0.03355267029438241,
+          "status": "ok"
+        },
+        {
+          "kind": "concurrent",
+          "index": 9,
+          "round": 1,
+          "completion_tokens": 256,
+          "token_count_source": "usage",
+          "content_chunks": 256,
+          "wall_seconds": 9.274088224978186,
+          "tokens_per_second": 27.60379174639587,
+          "ttft_seconds": 0.7167244190350175,
+          "mean_inter_token_latency_seconds": 0.03355823490978675,
+          "status": "ok"
+        },
+        {
+          "kind": "concurrent",
+          "index": 10,
+          "round": 1,
+          "completion_tokens": 256,
+          "token_count_source": "usage",
+          "content_chunks": 256,
+          "wall_seconds": 9.237994051072747,
+          "tokens_per_second": 27.71164373831486,
+          "ttft_seconds": 0.6617499639978632,
+          "mean_inter_token_latency_seconds": 0.033632223964577504,
+          "status": "ok"
+        },
+        {
+          "kind": "concurrent",
+          "index": 11,
+          "round": 1,
+          "completion_tokens": 256,
+          "token_count_source": "usage",
+          "content_chunks": 256,
+          "wall_seconds": 9.270332691026852,
+          "tokens_per_second": 27.614974406236065,
+          "ttft_seconds": 0.7162568930070847,
+          "mean_inter_token_latency_seconds": 0.03354506925908009,
+          "status": "ok"
+        },
+        {
+          "kind": "concurrent",
+          "index": 12,
+          "round": 1,
+          "completion_tokens": 256,
+          "token_count_source": "usage",
+          "content_chunks": 256,
+          "wall_seconds": 9.272424796014093,
+          "tokens_per_second": 27.60874373551629,
+          "ttft_seconds": 0.7169375569792464,
+          "mean_inter_token_latency_seconds": 0.033550881157063096,
+          "status": "ok"
+        },
+        {
+          "kind": "concurrent",
+          "index": 13,
+          "round": 1,
+          "completion_tokens": 256,
+          "token_count_source": "usage",
+          "content_chunks": 256,
+          "wall_seconds": 9.271107339998707,
+          "tokens_per_second": 27.612667032289554,
+          "ttft_seconds": 0.7154567230027169,
+          "mean_inter_token_latency_seconds": 0.033551485458498495,
+          "status": "ok"
+        },
+        {
+          "kind": "concurrent",
+          "index": 14,
+          "round": 1,
+          "completion_tokens": 256,
+          "token_count_source": "usage",
+          "content_chunks": 256,
+          "wall_seconds": 9.273916142992675,
+          "tokens_per_second": 27.60430394806107,
+          "ttft_seconds": 0.7157962470082566,
+          "mean_inter_token_latency_seconds": 0.03356119889820761,
+          "status": "ok"
+        },
+        {
+          "kind": "concurrent",
+          "index": 15,
+          "round": 1,
+          "completion_tokens": 256,
+          "token_count_source": "usage",
+          "content_chunks": 256,
+          "wall_seconds": 9.27381854201667,
+          "tokens_per_second": 27.604594465607327,
+          "ttft_seconds": 0.7156016050139442,
+          "mean_inter_token_latency_seconds": 0.03356153609404596,
+          "status": "ok"
+        },
+        {
+          "kind": "concurrent",
+          "index": 16,
+          "round": 1,
+          "completion_tokens": 256,
+          "token_count_source": "usage",
+          "content_chunks": 256,
+          "wall_seconds": 9.274302339996211,
+          "tokens_per_second": 27.603154460037214,
+          "ttft_seconds": 0.7170540069928393,
+          "mean_inter_token_latency_seconds": 0.03355778407844185,
+          "status": "ok"
+        }
+      ],
+      "ttft_seconds": {
+        "p50": 0.715868231956847,
+        "p95": 0.7172223764646333
+      },
+      "per_request_tokens_per_second": {
+        "p50": 27.60800017509399,
+        "p95": 27.712555612746645
+      }
+    }
+  ]
+}

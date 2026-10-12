@@ -5,7 +5,10 @@ import argparse
 import concurrent.futures
 import datetime as dt
 import json
+import math
+import os
 import platform
+import signal
 import statistics
 import subprocess
 import sys
@@ -58,16 +61,15 @@ def parse_stream(lines, started_at, now=time.perf_counter):
     if not arrivals:
         raise ValueError("stream contained no content chunks")
     elapsed = ended_at - started_at
-    tokens = usage_tokens if usage_tokens is not None else len(arrivals)
     intervals = [later - earlier for earlier, later in zip(arrivals, arrivals[1:])]
     return {
-        "completion_tokens": tokens,
-        "token_count_source": "usage" if usage_tokens is not None else "content_chunks",
+        "completion_tokens": usage_tokens,
+        "token_count_source": "usage" if usage_tokens is not None else "unavailable",
         "content_chunks": len(arrivals),
         "wall_seconds": elapsed,
-        "tokens_per_second": tokens / elapsed,
+        "tokens_per_second": usage_tokens / elapsed if usage_tokens is not None and elapsed > 0 else None,
         "ttft_seconds": arrivals[0] - started_at,
-        "mean_inter_token_latency_seconds": statistics.mean(intervals) if intervals else None,
+        "mean_inter_chunk_latency_seconds": statistics.mean(intervals) if intervals else None,
     }
 
 
@@ -137,6 +139,7 @@ def arguments(argv=None):
     parser.add_argument("--single-runs", type=int, default=5)
     parser.add_argument("--concurrency", type=int, default=16)
     parser.add_argument("--concurrent-rounds", type=int, default=1)
+    parser.add_argument("--deadline-seconds", type=float, default=600)
     parser.add_argument("--prompt", default=PROMPT)
     parser.add_argument("--image")
     parser.add_argument("--out", type=Path, default=Path("bench/results") / (dt.datetime.now(dt.timezone.utc).strftime("%Y%m%dT%H%M%SZ") + ".json"))
@@ -145,11 +148,19 @@ def arguments(argv=None):
         parser.error("max-tokens must be 1..4096, single-runs 1..100, concurrency 1..128, concurrent-rounds 1..100")
     if args.single_runs + args.concurrency * args.concurrent_rounds > 1000:
         parser.error("at most 1000 measured requests are allowed")
+    if not math.isfinite(args.deadline_seconds) or args.deadline_seconds <= 0:
+        parser.error("deadline-seconds must be a positive finite number")
     return args
 
 
 def main(argv=None):
     args = arguments(argv)
+    def deadline_abort(_signum, _frame):
+        os.write(2, f"measurement aborted: overall {args.deadline_seconds:g}-second deadline exceeded\n".encode())
+        os._exit(124)
+
+    signal.signal(signal.SIGALRM, deadline_abort)
+    signal.setitimer(signal.ITIMER_REAL, args.deadline_seconds)
     started_utc = dt.datetime.now(dt.timezone.utc).isoformat()
     base = args.url.rstrip("/")
     try:
@@ -186,11 +197,12 @@ def main(argv=None):
             "wall_seconds": round_wall,
             "aggregate_tokens_per_second": (
                 sum(r["completion_tokens"] for r in requests) / round_wall
-                if all(r["status"] == "ok" for r in requests) else None
+                if round_wall > 0 and all(r["status"] == "ok" and r["completion_tokens"] is not None for r in requests) else None
             ),
             "requests": requests,
             "ttft_seconds": summary(requests, "ttft_seconds"),
             "per_request_tokens_per_second": summary(requests, "tokens_per_second"),
+            "mean_inter_chunk_latency_seconds": summary(requests, "mean_inter_chunk_latency_seconds"),
         })
 
     result = {
@@ -207,17 +219,17 @@ def main(argv=None):
         "single_requests": singles,
         "single_tokens_per_second": summary(singles, "tokens_per_second"),
         "single_ttft_seconds": summary(singles, "ttft_seconds"),
-        "single_mean_inter_token_latency_seconds": summary(singles, "mean_inter_token_latency_seconds"),
+        "single_mean_inter_chunk_latency_seconds": summary(singles, "mean_inter_chunk_latency_seconds"),
         "concurrent_rounds": rounds,
     }
     args.out.parent.mkdir(parents=True, exist_ok=True)
     args.out.write_text(json.dumps(result, indent=2) + "\n", encoding="utf-8")
     def fmt(value):
         return "n/a" if value is None else f"{value:.3f}"
-    print("Mode       Requests  tok/s p50/p95  TTFT s p50/p95  Aggregate tok/s")
-    print(f"Single     {args.single_runs:8d}  {fmt(result['single_tokens_per_second']['p50'])}/{fmt(result['single_tokens_per_second']['p95'])}       {fmt(result['single_ttft_seconds']['p50'])}/{fmt(result['single_ttft_seconds']['p95'])}        -")
+    print("Mode       Requests  tok/s p50/p95  TTFT s p50/p95  Inter-chunk s p50/p95  Aggregate tok/s")
+    print(f"Single     {args.single_runs:8d}  {fmt(result['single_tokens_per_second']['p50'])}/{fmt(result['single_tokens_per_second']['p95'])}       {fmt(result['single_ttft_seconds']['p50'])}/{fmt(result['single_ttft_seconds']['p95'])}       {fmt(result['single_mean_inter_chunk_latency_seconds']['p50'])}/{fmt(result['single_mean_inter_chunk_latency_seconds']['p95'])}        -")
     for row in rounds:
-        print(f"Round {row['round']:<4d} {args.concurrency:8d}  {fmt(row['per_request_tokens_per_second']['p50'])}/{fmt(row['per_request_tokens_per_second']['p95'])}       {fmt(row['ttft_seconds']['p50'])}/{fmt(row['ttft_seconds']['p95'])}        {fmt(row['aggregate_tokens_per_second'])}")
+        print(f"Round {row['round']:<4d} {args.concurrency:8d}  {fmt(row['per_request_tokens_per_second']['p50'])}/{fmt(row['per_request_tokens_per_second']['p95'])}       {fmt(row['ttft_seconds']['p50'])}/{fmt(row['ttft_seconds']['p95'])}       {fmt(row['mean_inter_chunk_latency_seconds']['p50'])}/{fmt(row['mean_inter_chunk_latency_seconds']['p95'])}        {fmt(row['aggregate_tokens_per_second'])}")
     print(f"JSON: {args.out}")
     return int(any(r["status"] != "ok" for r in singles + [request for row in rounds for request in row["requests"]]))
 
