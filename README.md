@@ -76,7 +76,7 @@ most of the scripts and tests.
 GB10 has 128 GB unified memory at **~273 GB/s**. Decode is memory-bandwidth-bound,
 so decode speed ≈ bandwidth / bytes-touched-per-token:
 
-| Model class | Decode speed | Verdict |
+| Model class | Output rate | Verdict |
 |---|---|---|
 | Dense ~32B (Q4/FP8) | ~10 tok/s (public GB10 benchmarks: 10.7 on llama.cpp, 9.4–10.1 on Ollama) | unusable for agentic loops |
 | MoE, 3B active (Qwen3-30B-A3B) | 52.9 tok/s single stream in my run on 2026-10-12 (five 256-token generations), 50 to 53 in my 2026-09-04 runs, up to ~89 in public llama.cpp benchmarks | the workable class |
