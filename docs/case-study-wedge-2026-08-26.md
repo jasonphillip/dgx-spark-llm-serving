@@ -1,11 +1,11 @@
 # Generation wedge and recovery, 2026-08-26
 
-This incident affected a local vLLM container named `llm` on
+This incident affected the vLLM container on
 2026-08-26, local time. The API still answered a metadata request, but text
 generation stopped completing. A `/v1/models` response could therefore say
 the process was alive while the batch client could not get work done. The
-client was a document-extraction client. This case records one outage and its
-observed recovery.
+client was a document-extraction batch client. This case records one outage and
+its observed recovery.
 
 ## Detection and timeline
 
@@ -18,7 +18,8 @@ probe between failures reset the count.
 The `engine-guard.log` lines show `05:32 probe fail #1`, `05:54 probe fail
 #1`, and `06:50 probe fail #1`. Each of those first failures was followed by
 a healthy probe, so none caused a restart. The next recorded line was `07:02
-probe fail #2`, followed by `07:02 RESTARTING llm (wedged)`.
+probe fail #2`, followed by `07:02 RESTARTING llm (wedged)`, with the container
+name shown as `llm`, the README's example name.
 The two-strike policy used two failed probes, at 06:50 and 07:02. The log
 timestamps have minute precision, so they do not give
 the precise start of the wedge.
@@ -32,8 +33,8 @@ readiness evidence here.
 
 ## Workload effect
 
-Before the restart, the client completed five to eight documents per minute
-through 07:02. It completed no documents from 07:03 through 07:14. It then
+Before the restart, the batch client completed five to eight documents per
+minute through 07:02. It completed no documents from 07:03 through 07:14. It then
 completed one to four per minute from 07:15 through 07:19. It was back to
 five to eight per minute from 07:20. Workload throughput therefore returned
 to its earlier range about 18 minutes after the 07:02 restart command. That
