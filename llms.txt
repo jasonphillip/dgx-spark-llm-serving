@@ -1,13 +1,13 @@
 # dgx-spark-llm-serving
 
-> Field notes and an operational guard for local vLLM serving on NVIDIA DGX Spark, covering model selection, serving flags, generation wedges, multi-node links, and unattended recovery.
+> Local vLLM serving on NVIDIA DGX Spark, with a generation guard, measured throughput, serving flags, multi-node links, and recovery notes.
 
 ## Project documentation
 
 - [README.md](README.md): Records measured serving behavior, deployment flags, failure modes, fleet networking, and reliability practices.
 - [LICENSE](LICENSE): Contains the MIT license terms.
-- [evidence/throughput-2026-09-04.md](evidence/throughput-2026-09-04.md): Records four single-stream Qwen3 FP8 vLLM throughput runs and their limits.
-- [evidence/throughput-2026-10-12.md](evidence/throughput-2026-10-12.md): Records single-stream and 16-stream Qwen3 FP8 vLLM throughput and test limits.
+- [evidence/throughput-2026-09-04.md](evidence/throughput-2026-09-04.md): Records four single-stream Qwen3 FP8 vLLM throughput runs and their conditions.
+- [evidence/throughput-2026-10-12.md](evidence/throughput-2026-10-12.md): Records single-stream and 16-stream Qwen3 FP8 vLLM throughput and test conditions.
 - [evidence/multinode-2026-07-and-08.md](evidence/multinode-2026-07-and-08.md): Records iperf3 and NCCL results with test conditions.
 - [docs/case-study-wedge-2026-08-26.md](docs/case-study-wedge-2026-08-26.md): Records one generation wedge, guard recovery, and workload effect.
 

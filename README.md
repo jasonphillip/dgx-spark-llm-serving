@@ -1,23 +1,30 @@
 # LLM serving on NVIDIA DGX Spark (GB10) — field notes, August–September 2026
 
-This repo is for people running local LLM inference on DGX Spark GB10 as the
-engine behind unattended batch and agent workloads.
+This repo documents local LLM inference on DGX Spark GB10 and provides a
+generation guard for unattended batch and agent workloads.
 
-The Qwen3 MoE vLLM server, generation guard, and ConnectX-7 ring worked on my
-three-Spark fleet. These are field notes from one fleet. Single-stream and
-16-stream results are directional, and external benchmark rows are marked.
+I ran the Qwen3 MoE vLLM server, generation guard, and ConnectX-7 ring on my
+three-Spark fleet. The single-stream and 16-stream measurements below come
+from this fleet. External benchmark rows are marked.
 
-## What this is, in one verifiable line
+The guard restarts vLLM after two consecutive failed generation probes. <!-- Quantified claim source: README.md -->
 
-This repo documents DGX Spark LLM serving and provides a guard that restarts vLLM after two consecutive probe failures. <!-- Quantified claim source: README.md -->
+## Measured result and engineering choice
 
-Generation probe with restart guard.
+Five single-stream Qwen3 FP8 requests reached 52.8 to 53.0 output tokens per
+second (p50 52.9) on a warm server on 2026-10-12. One round of 16 concurrent
+requests reached 441.6 tok/s aggregate (27.6 tok/s per request p50). The
+[2026-10-12 throughput record](evidence/throughput-2026-10-12.md) gives the
+test setup and request details. Four earlier single-stream requests reached 50.4 to
+53.1 tok/s; see the [2026-09-04 record](evidence/throughput-2026-09-04.md).
+In one wedge, the guard restarted the container at
+07:02 and a later probe was healthy at 07:12. The [case study](docs/case-study-wedge-2026-08-26.md)
+records the workload recovery separately.
 
-Verify it in `scripts/engine-guard.sh`.
-
-The canonical source is https://github.com/jasonphillip/dgx-spark-llm-serving
-
-Extracted from a private working tree on 2026-08-26.
+MoE keeps active parameters small, which reduces decode work on GB10. A real
+completion probe detects generation failure that a metadata endpoint can miss.
+The guard restarts after two consecutive failed probes, so recovery waits for
+the next scheduled run.
 
 ## Quickstart
 
@@ -47,23 +54,6 @@ systemctl --user daemon-reload && systemctl --user enable --now engine-guard.tim
 The timer runs only while a user session exists unless user lingering is enabled.
 Check the host before changing lingering.
 
-## Measured result and engineering choice
-
-Five single-stream Qwen3 FP8 requests reached 52.8 to 53.0 output tokens per
-second (p50 52.9) on a warm server on 2026-10-12. One round of 16 concurrent
-requests reached 441.6 tok/s aggregate (27.6 tok/s per request p50). The
-[2026-10-12 throughput record](evidence/throughput-2026-10-12.md) gives the
-conditions and limits. Four earlier single-stream requests reached 50.4 to
-53.1 tok/s; see the [2026-09-04 record](evidence/throughput-2026-09-04.md).
-In one wedge, the guard restarted the container at
-07:02 and a later probe was healthy at 07:12. The [case study](docs/case-study-wedge-2026-08-26.md)
-records the workload recovery separately.
-
-MoE keeps active parameters small, which reduces decode work on GB10. A real
-completion probe detects generation failure that a metadata endpoint can miss.
-The guard restarts after two consecutive failed probes, so recovery waits for
-the next scheduled run.
-
 ## How this was built
 
 I wrote these notes and scripts with LLM coding agents, Claude Code and Codex,
@@ -71,7 +61,7 @@ under my direction. I ran the fleet, chose the models and flags, diagnosed the
 wedge, reviewed every change, and set the acceptance criteria. The agents wrote
 most of the scripts and tests.
 
-## The one law that decides everything
+## Memory bandwidth and model choice
 
 GB10 has 128 GB unified memory at **~273 GB/s**. Decode is memory-bandwidth-bound,
 so decode speed ≈ bandwidth / bytes-touched-per-token:
@@ -144,7 +134,7 @@ records the test conditions and commands. Findings:
 - `NCCL_NET_PLUGIN=none` was set for the recorded NCCL tests. The three-node
   ring needed the 2.29.7 fork because stock 2.28.9 paired asymmetric rails by
   device index and failed.
-- NVIDIA's guidance is that a second cable between the same two nodes does not add bandwidth and the second port belongs to the ring. I did not test it.
+- NVIDIA's guidance is that a second cable between the same two nodes does not add bandwidth and the second port belongs to the ring.
 - DeepSeek V4 Flash ran in production with tensor parallelism TP=2 across two Sparks, with an OpenAI-compatible API on one node and a served context of 458,752 tokens. It fed the companion Terminal-Bench runs.
 
 ## Reliability pattern for unattended multi-day runs
@@ -158,6 +148,12 @@ The stack that survived a multi-day autonomous run on this fleet:
    when the engine flaps), disk/peer checks, heartbeat log.
 4. systemd user timers everywhere; oneshot services started with `--no-block`
    (a `restart` on a long oneshot blocks for the whole pass — learned the hard way).
+
+## Notes
+
+The canonical source is https://github.com/jasonphillip/dgx-spark-llm-serving
+
+Extracted from a private working tree on 2026-08-26.
 
 ## License
 
